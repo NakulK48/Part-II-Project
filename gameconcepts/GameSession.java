@@ -225,10 +225,13 @@ public class GameSession implements Serializable {
 					break;
 				case "combine":
 					combineItems(action);
+				case "open":
+					openLockedDoor(action);
 				case "help":
 					System.out.println("move <direction>/take <item in room>/inspect <item in inventory>/");
 					System.out.println("look (get description of room)/inventory (list items)/");
-					System.out.println("combine <item1> and <item2>");
+					System.out.println("combine <item1> and <item2>/");
+					System.out.println("open <door> with <key>/");
 					System.out.println("save/restore");
 					System.out.println("or take some action on an item in the room or your inventory.");
 					break;
@@ -268,7 +271,7 @@ public class GameSession implements Serializable {
 		
 		try {
 			String item1 = didYouMean(getPossibleItems(availableItems, rawItemName1));
-			String item2 = didYouMean(getPossibleItems(availableItems, rawItemName1));
+			String item2 = didYouMean(getPossibleItems(availableItems, rawItemName2));
 			if (!kb.hasLink(item1, item2)) {
 				System.out.println("Those don't go together...");
 				return;
@@ -295,6 +298,48 @@ public class GameSession implements Serializable {
 		
 
 		
+	}
+	
+	private void openLockedDoor(String input) throws InvalidInputException, NoSolutionException, SameItemException {
+		AnalyzedInput ai = ip.analyzeInput(input);
+		
+		if (ai.nouns.size() != 2) {
+			System.out.println("Please select a door and a key");
+		}
+		
+		String rawDoorName = ai.nouns.get(0);
+		String rawKeyName = ai.nouns.get(1);
+		
+		Set<String> availableItems = currentInventory.getItemNames();
+		availableItems.addAll(currentLocation.availableItems.items);
+		
+		try {
+			String doorName = didYouMean(getPossibleItems(availableItems, rawDoorName));
+			String keyName = didYouMean(getPossibleItems(availableItems, rawKeyName));
+			Item ik = items.get(keyName);
+			Item id = items.get(doorName);
+			if (!(ik instanceof Key)) {
+				System.out.println("That isn't a key!");
+				return;
+			}
+			if (!(ik instanceof LockedDoor)) {
+				System.out.println("That isn't a door!");
+			}
+			if (!kb.hasOpen(doorName, keyName)) {
+				System.out.println("Those don't go together...");
+				return;
+			}
+			
+			LockedDoor ld = (LockedDoor) items.get(doorName);
+			Key k = (Key) items.get(keyName);
+			
+			ld.open(locations);
+			
+		}
+		catch (InvalidInputException e) {
+			System.out.println("Sorry, the item you selected was not recognised.");
+			return;
+		}
 	}
 	
 	private Link getCorrectLink(String item1, String item2) {

@@ -1,24 +1,22 @@
 package gameconcepts;
 
-public class LockedDoor {
+import java.util.HashMap;
 
-/*
-	public String name; //TODO: ensure uniqueness
-	public String description;
-	public Location originLocation;
-	public Location targetLocation;
-	public String direction;
+public class LockedDoor extends Item {
+
+	public String originLocation;
+	public String targetLocation;
+	public Direction direction;
 	
-	public LockedDoor(String name, String description, Location originLocation, Location targetLocation) {
-		this.name = name;
-		this.description = description;
+	public LockedDoor(String name, String description, String originLocation, String targetLocation) {
+		super(name, description, false);
 		this.originLocation = originLocation;
 		this.targetLocation = targetLocation;
 	}
 	
-	public void open() {
-		originLocation.exits.put(direction, targetLocation);
-		originLocation.lockedDoors.remove(this.name);
+	public void open(HashMap<String, Location> locs) {
+		Location originLoc = locs.get(originLocation);
+		originLoc.addExit(direction, targetLocation, locs);
+		originLoc.availableItems.removeItem(this.name);
 	}
-*/
 }

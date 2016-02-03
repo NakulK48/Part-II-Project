@@ -23,7 +23,6 @@ public class Location implements Serializable {
 		this.flavorText = loc.flavorText;
 		this.availableItems = new Inventory(loc.availableItems);
 		this.exits = loc.exits;
-		
 	}
 
 	public String generateText() {
@@ -38,6 +37,29 @@ public class Location implements Serializable {
 		}
 		lines.add("\n");
 		return String.join("\n", lines);
+	}
+	
+	public static Direction getOppositeDirection(Direction direction) {
+		switch (direction) {
+			case NORTH: return Direction.SOUTH;
+			case EAST: return Direction.WEST;
+			case SOUTH: return Direction.NORTH;
+			case WEST: return Direction.EAST;
+			
+			case NORTHEAST: return Direction.SOUTHWEST;
+			case SOUTHEAST: return Direction.NORTHWEST;
+			case SOUTHWEST: return Direction.NORTHEAST;
+			case NORTHWEST: return Direction.SOUTHEAST;
+			
+			default: return null;
+		}
+			
+	}
+	
+	public void addExit(Direction direction, String targetLocation, HashMap<String, Location> locs) {
+		this.exits.put(direction, targetLocation);
+		Location targetLoc = locs.get(targetLocation);
+		targetLoc.exits.put(getOppositeDirection(direction), this.name);
 	}
 	
 }

@@ -9,11 +9,13 @@ import java.util.Set;
 
 import gameconcepts.Action;
 import gameconcepts.Direction;
+import gameconcepts.InvalidChoiceException;
 import gameconcepts.Inventory;
 import gameconcepts.Item;
-import gameconcepts.ItemNotFoundException;
+import gameconcepts.Key;
 import gameconcepts.Link;
 import gameconcepts.Location;
+import gameconcepts.LockedDoor;
 import knowledgerep.KnowledgeBase;
 import knowledgerep.SameItemException;
 
@@ -50,21 +52,15 @@ public class GameEditor {
 		return s.nextLine();
 	}
 	
-	public Direction getOppositeDirection(Direction direction) {
-		switch (direction) {
-			case NORTH: return Direction.SOUTH;
-			case EAST: return Direction.WEST;
-			case SOUTH: return Direction.NORTH;
-			case WEST: return Direction.EAST;
-			
-			case NORTHEAST: return Direction.SOUTHWEST;
-			case SOUTHEAST: return Direction.NORTHWEST;
-			case SOUTHWEST: return Direction.NORTHEAST;
-			case NORTHWEST: return Direction.SOUTHEAST;
-			
-			default: return null;
+	public String promptAndVerify(String promptText, Set<String> permitted) throws InvalidChoiceException {
+		String response = prompt(promptText);
+		
+		if (!permitted.contains(response)) {
+			throw new InvalidChoiceException();
 		}
-			
+		
+		return response;
+		
 	}
 	
 	public List<String> stripAndSplit(String raw) {
@@ -191,14 +187,12 @@ public class GameEditor {
 						Direction direction = Direction.valueOf(directionString.toUpperCase());
 						System.out.println("Available rooms:");
 						System.out.println(this.locations.keySet());
-						String locationName = prompt("Enter a location name:");
-						if (!locations.containsKey(locationName)) {
+						String destinationName = prompt("Enter a location name:");
+						if (!locations.containsKey(destinationName)) {
 							System.out.println("No such room\n");
 							break;
 						}
-						Location exit = locations.get(locationName);
-						loc.exits.put(direction, locationName);
-						exit.exits.put(getOppositeDirection(direction), locName);
+						loc.addExit(direction, destinationName, locations);
 						break;
 					case "5": //remove exit
 						System.out.println(loc.exits.keySet());
@@ -335,6 +329,32 @@ public class GameEditor {
 			else {
 				System.out.println("No such item.");
 			}
+		}
+	}
+	
+	public void createLockedDoor() {
+		try {
+			String doorName = prompt("Door name:");
+			String doorDesc = prompt("Door description:");
+			String doorDest = promptAndVerify("Door destination:", locations.keySet());
+			String doorOrig = promptAndVerify("Door origin:", locations.keySet());
+			String keyName = prompt("Key name:");
+			String keyDesc = prompt("Key description:");
+			
+			kb.addOpen(keyName, doorName);
+			Key k = new Key(keyName, keyDesc, doorName);
+			LockedDoor ld = new LockedDoor(doorName, doorDesc, doorOrig, doorDest);
+			items.put(keyName,  k);
+			items.put(doorName, ld);
+			
+			Location orig = locations.get(doorOrig);
+			orig.availableItems.addItem(ld);
+			System.out.println("Don't forget to place the key somewhere!");
+		} catch (InvalidChoiceException e) {
+			System.out.println("Sorry, that is not a valid choice.");
+			createLockedDoor();
+		} catch (SameItemException e) {
+			System.out.println("The door and key cannot have the same name!");
 		}
 	}
 	

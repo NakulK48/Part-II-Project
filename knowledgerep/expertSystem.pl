@@ -29,6 +29,8 @@ rule : X hasproperty B if X hasproperty A and X hasproperty C :- A&C implies B.
 fact : A hasproperty B&C :- fact : A hasproperty B, fact : A hasproperty C.
 
 fact : a linkedwith b.
+fact : a opens b.
+fact : a fitsinside b.
 
 % Symmetric relation
 fact : X linkedwith Y :- fact : Y linkedwith X.

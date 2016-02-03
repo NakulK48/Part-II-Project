@@ -95,10 +95,25 @@ public class KnowledgeBase implements Cloneable, Serializable {
 		return getQuerySuccess(s);
 	}
 	
-	public void addLink(String item1, String item2) throws SameItemException {
+	private void addRelation(String functor, String item1, String item2) throws SameItemException {
 		if (item1.equals(item2)) throw new SameItemException();
-		String fact = sanitiseString(item1) + " linkedwith " + sanitiseString(item2);
+		String fact = sanitiseString(item1) + " " + functor + " " + sanitiseString(item2);
 		facts.add(fact);
+	}
+	
+	public void addLink(String item1, String item2) throws SameItemException {
+		addRelation("linkedwith", item1, item2);
+	}
+	
+	public void addOpen(String key, String door) throws SameItemException {
+		addRelation("opens", key, door);
+	}
+	
+	public boolean hasOpen(String key, String door) throws SameItemException, NoSolutionException {
+		if (key.equals(door)) throw new SameItemException();
+		String fact = sanitiseString(key) + " opens " + sanitiseString(door);
+		SolveInfo s = query(fact);
+		return getQuerySuccess(s);
 	}
 	
 	public void removeProperty(String property, String item) {
