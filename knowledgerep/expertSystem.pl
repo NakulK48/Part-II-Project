@@ -31,6 +31,9 @@ fact : A hasproperty B&C :- fact : A hasproperty B, fact : A hasproperty C.
 fact : a linkedwith b.
 fact : a opens b.
 fact : a fitsinside b.
+fact : a inside b.
+
+rule : I fitsinside C if C hasproperty container and I hasvolume VI and C hasvolume VC and VI < VC.
 
 % Symmetric relation
 fact : X linkedwith Y :- fact : Y linkedwith X.

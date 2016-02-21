@@ -14,6 +14,12 @@ public class LockedDoor extends Item {
 		this.targetLocation = targetLocation;
 	}
 	
+	public LockedDoor(LockedDoor ld) {
+		super(ld);
+		this.originLocation = ld.originLocation;
+		this.targetLocation = ld.targetLocation;
+	}
+	
 	public void open(HashMap<String, Location> locs) {
 		Location originLoc = locs.get(originLocation);
 		originLoc.addExit(direction, targetLocation, locs);

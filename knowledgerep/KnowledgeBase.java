@@ -53,6 +53,10 @@ public class KnowledgeBase implements Cloneable, Serializable {
 		this.rules = kb.rules;
 	}
 	
+	public static String generateFact(String functor, String arg1, String arg2) {
+		return sanitiseString(arg1) + " " + functor + " " + sanitiseString(arg2); 
+	}
+	
 	public void addFact(String fact) {
 		facts.add(fact);
 	}
@@ -97,7 +101,7 @@ public class KnowledgeBase implements Cloneable, Serializable {
 	
 	private void addRelation(String functor, String item1, String item2) throws SameItemException {
 		if (item1.equals(item2)) throw new SameItemException();
-		String fact = sanitiseString(item1) + " " + functor + " " + sanitiseString(item2);
+		String fact = generateFact(item1, functor, item2);
 		facts.add(fact);
 	}
 	
@@ -111,9 +115,30 @@ public class KnowledgeBase implements Cloneable, Serializable {
 	
 	public boolean hasOpen(String key, String door) throws SameItemException, NoSolutionException {
 		if (key.equals(door)) throw new SameItemException();
-		String fact = sanitiseString(key) + " opens " + sanitiseString(door);
+		String fact = generateFact("opens", key, door);
 		SolveInfo s = query(fact);
 		return getQuerySuccess(s);
+	}
+	
+	public boolean fitsInside(String item, String container) throws NoSolutionException {
+		String fact = generateFact("fitsInside", item, container);
+		SolveInfo s = query(fact);
+		return getQuerySuccess(s);
+	}
+	
+	public boolean isInside(String item, String container) throws NoSolutionException {
+		String fact = generateFact("inside", item, container);
+		SolveInfo s = query(fact);
+		return getQuerySuccess(s);
+	}
+	
+	public void putInside(String item, String container) throws SameItemException {
+		addRelation("inside", item, container);
+	}
+	
+	public void takeOut(String item, String container) {
+		String fact = generateFact(item, "inside", container);
+		facts.remove(fact);
 	}
 	
 	public void removeProperty(String property, String item) {

@@ -224,9 +224,9 @@ public class GameSession implements Serializable {
 					System.out.println(currentInventory.getItemNames());
 					break;
 				case "combine":
-					combineItems(action);
+					combineItems(input);
 				case "open":
-					openLockedDoor(action);
+					openLockedDoor(input);
 				case "help":
 					System.out.println("move <direction>/take <item in room>/inspect <item in inventory>/");
 					System.out.println("look (get description of room)/inventory (list items)/");
@@ -252,6 +252,8 @@ public class GameSession implements Serializable {
 			}
 		}
 		catch (Exception e) {
+			//TODO: REMOVE
+			e.printStackTrace();
 			System.out.println("Sorry, I don't understand. Try entering 'help.'");
 		}
 	}
@@ -322,7 +324,7 @@ public class GameSession implements Serializable {
 				System.out.println("That isn't a key!");
 				return;
 			}
-			if (!(ik instanceof LockedDoor)) {
+			if (!(id instanceof LockedDoor)) {
 				System.out.println("That isn't a door!");
 			}
 			if (!kb.hasOpen(doorName, keyName)) {

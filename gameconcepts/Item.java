@@ -14,7 +14,6 @@ public class Item implements Serializable {
 	public boolean takable;
 	public Set<String> tags;
 	
-	
 	// Each item should have a unique identifier
 	private static int nextID = 0;
 	
@@ -40,10 +39,15 @@ public class Item implements Serializable {
 	
 	@SuppressWarnings("unchecked")
 	public Item(Item item) {
+		if (item instanceof Key) {
+			
+		}
 		this.id = item.id;
 		this.name = item.name;
 		this.description = item.description;
 		this.properties = (HashSet<String>) item.properties.clone();
+		this.takable = item.takable;
+		this.tags = new HashSet<String>(item.tags);
 	}
 	
 	public boolean hasTag(String tag) {

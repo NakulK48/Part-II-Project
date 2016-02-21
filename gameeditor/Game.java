@@ -17,8 +17,10 @@ import gameconcepts.Action;
 import gameconcepts.GameSession;
 import gameconcepts.Inventory;
 import gameconcepts.Item;
+import gameconcepts.Key;
 import gameconcepts.Link;
 import gameconcepts.Location;
+import gameconcepts.LockedDoor;
 import knowledgerep.KnowledgeBase;
 
 public class Game implements Serializable {
@@ -89,7 +91,7 @@ public class Game implements Serializable {
 	@SuppressWarnings("unchecked")
 	public void playGame() throws IOException {
 		Scanner s = new Scanner(System.in);
-		//TODO: These both really need to be deep copies.
+		
 		while (true) {
 			System.out.println("Select a session or type 'new' to create one or 'q' to quit.");
 			System.out.println("Available sessions:");
@@ -124,6 +126,15 @@ public class Game implements Serializable {
 	public HashMap<String, Item> deepCopyAllItems(HashMap<String, Item> original) {
 		HashMap<String, Item> copy = new HashMap<String, Item>();
 		for (String s : original.keySet()) {
+			Item oi = original.get(s);
+			if (oi instanceof Key) {
+				Key ok = (Key) oi;
+				copy.put(s,  new Key(ok));
+			}
+			else if (oi instanceof LockedDoor) {
+				LockedDoor old = (LockedDoor) oi;
+				copy.put(s, new LockedDoor(old));
+			}
 			copy.put(s, new Item(original.get(s)));
 		}
 		

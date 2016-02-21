@@ -8,6 +8,7 @@ import java.util.Scanner;
 import java.util.Set;
 
 import gameconcepts.Action;
+import gameconcepts.Container;
 import gameconcepts.Direction;
 import gameconcepts.InvalidChoiceException;
 import gameconcepts.Inventory;
@@ -247,6 +248,10 @@ public class GameEditor {
 		while (true) {
 			System.out.println();
 			Item item = items.get(itemName);
+			if (item instanceof Container) {
+				manageContainer(itemName);
+				return;
+			}
 			item.printDetails();
 			
 			System.out.println("(1) Edit description");
@@ -267,6 +272,61 @@ public class GameEditor {
 					String takableString = prompt("Takable? (y/n)");
 					if (takableString.equals("n")) takable = false;
 					item.takable = takable;
+				case "q":
+					return;
+				default:
+					System.out.println("Not a valid option.");
+			}
+		}
+	}
+	
+	public void manageContainer(String name) {
+		while (true) {
+			System.out.println();
+			Container c = (Container) items.get(name);
+			c.printDetails();
+			
+			System.out.println("(1) Edit description");
+			System.out.println("(2) Set properties");
+			System.out.println("(3) Set takable");
+			System.out.println("(4) Add item");
+			System.out.println("(5) Remove item");
+			System.out.println("(q) Go back");
+			
+			String choice = s.nextLine();
+			switch (choice) {
+				case "1":
+					c.description = prompt("Enter description:");
+					break;
+				case "2": //set properties
+					TextInput.launchPropertyWindow(c, kb);
+					break;
+				case "3":
+					boolean takable = true;
+					String takableString = prompt("Takable? (y/n)");
+					if (takableString.equals("n")) takable = false;
+					c.takable = takable;
+					break;
+				case "4":
+					try {
+						String itemName = promptAndVerify("Select an item to add:", items.keySet());
+						c.addItem(itemName, kb);
+					} catch (InvalidChoiceException e) {
+						System.out.println("Item not recognised.");
+						continue;
+					} catch (SameItemException e) {
+						System.out.println("You cannot put an item inside itself!");
+						continue;
+					}
+					break;
+				case "5":
+					try {
+						String itemName = promptAndVerify("Select an item to add:", c.contains);
+						c.removeItem(itemName, kb);
+					} catch (InvalidChoiceException e) {
+						System.out.println("Item not recognised.");
+						continue;
+					}
 				case "q":
 					return;
 				default:
@@ -429,6 +489,8 @@ public class GameEditor {
 			System.out.println("(8) Manage property rules");
 			System.out.println("(9) Print knowledgebase");
 			System.out.println("(10) Manage links");
+			System.out.println("(11) Create locked door");
+			System.out.println("(12) Create container");
 			System.out.println("(q) Exit");
 			String choice = s.nextLine();
 			switch (choice){
@@ -484,6 +546,13 @@ public class GameEditor {
 					break;
 				case "10":
 					manageLinks();
+					break;
+				case "11":
+					createLockedDoor();
+					break;
+				case "12":
+					createContainer();
+					break;
 				case "q":
 					return;
 				default:
@@ -492,6 +561,35 @@ public class GameEditor {
 		}
 	}
 	
+	public void createContainer() {
+		try {
+			int volume = 0;
+			String name = prompt("Container name:");
+			String desc = prompt("Container description:");
+			String vol = prompt("Volume");
+			volume = Integer.parseInt(vol);
+			Container c = new Container(name, desc, volume);
+			while (true) {
+				String choice = prompt("Add item? (y/n)");
+				if (!choice.equals("y")) break;
+				String itemName = prompt(items.toString());
+				if (!items.containsKey(itemName)) {
+					System.out.println("Item not recognised.");
+					continue;
+				}
+				c.addItem(itemName, kb);
+			}
+			
+			items.put(name, c);
+		} catch (SameItemException e) {
+			return;
+		} catch (NumberFormatException e) {
+			System.out.println("Volume must be an integer.");
+			createContainer();
+		}
+		
+	}
+
 	public static void main(String[] args) {
 	}
 	
