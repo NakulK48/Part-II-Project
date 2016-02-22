@@ -10,10 +10,17 @@ public class Container extends Item {
 	public int volume;
 	public Set<String> contains;
 	
-	public Container(String name, String description, int volume) {
+	public Container(String name, String description, int volume, KnowledgeBase kb) {
 		super(name, description);
 		this.takable = false;
 		this.volume = volume;
+		kb.addProperty("container", name);
+	}
+	
+	public Container(Container c) {
+		super(c.name, c.description);
+		this.takable = c.takable;
+		this.volume = c.volume;
 	}
 	
 	public void addItem(String itemName, KnowledgeBase kb) throws SameItemException {

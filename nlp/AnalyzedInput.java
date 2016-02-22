@@ -17,7 +17,12 @@ public class AnalyzedInput {
 		this.verbSynonyms = verbSynonyms;
 		this.sentiment = sentiment;
 	}
-	
-	
+
+	@Override
+	public String toString() {
+		return "AnalyzedInput [nouns=" + nouns + ", verb=" + verb + ", verbSynonyms=" + verbSynonyms + ", sentiment="
+				+ sentiment + "]";
+	}
+
 	
 }

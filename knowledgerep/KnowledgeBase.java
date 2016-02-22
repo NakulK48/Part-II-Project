@@ -54,7 +54,7 @@ public class KnowledgeBase implements Cloneable, Serializable {
 	}
 	
 	public static String generateFact(String functor, String arg1, String arg2) {
-		return sanitiseString(arg1) + " " + functor + " " + sanitiseString(arg2); 
+		return sanitiseString(arg1) + " " + functor + " " + sanitiseString(arg2) + "."; 
 	}
 	
 	public void addFact(String fact) {
@@ -101,7 +101,7 @@ public class KnowledgeBase implements Cloneable, Serializable {
 	
 	private void addRelation(String functor, String item1, String item2) throws SameItemException {
 		if (item1.equals(item2)) throw new SameItemException();
-		String fact = generateFact(item1, functor, item2);
+		String fact = generateFact(functor, item1, item2);
 		facts.add(fact);
 	}
 	

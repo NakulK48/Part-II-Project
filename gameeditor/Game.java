@@ -14,6 +14,7 @@ import java.util.Scanner;
 import java.util.Set;
 
 import gameconcepts.Action;
+import gameconcepts.Container;
 import gameconcepts.GameSession;
 import gameconcepts.Inventory;
 import gameconcepts.Item;
@@ -135,7 +136,11 @@ public class Game implements Serializable {
 				LockedDoor old = (LockedDoor) oi;
 				copy.put(s, new LockedDoor(old));
 			}
-			copy.put(s, new Item(original.get(s)));
+			else if (oi instanceof Container) {
+				Container old = (Container) oi;
+				copy.put(s, new Container(old));
+			}
+			else copy.put(s, new Item(original.get(s)));
 		}
 		
 		return copy;

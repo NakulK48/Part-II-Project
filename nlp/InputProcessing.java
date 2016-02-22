@@ -11,6 +11,7 @@ import edu.smu.tspell.wordnet.Synset;
 import edu.smu.tspell.wordnet.SynsetType;
 import edu.smu.tspell.wordnet.VerbSynset;
 import edu.smu.tspell.wordnet.WordNetDatabase;
+import edu.stanford.nlp.ie.machinereading.structure.MachineReadingAnnotations.DependencyAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.PartOfSpeechAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.TextAnnotation;
@@ -18,6 +19,8 @@ import edu.stanford.nlp.ling.CoreAnnotations.TokensAnnotation;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
+import edu.stanford.nlp.semgraph.SemanticGraph;
+import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.BasicDependenciesAnnotation;
 import edu.stanford.nlp.sentiment.SentimentCoreAnnotations.SentimentClass;
 import edu.stanford.nlp.util.CoreMap;
 
@@ -27,7 +30,7 @@ public class InputProcessing {
 	StanfordCoreNLP pipeline;
 	
 	public InputProcessing() {
-		props.setProperty("annotators", "tokenize, ssplit, pos, parse, sentiment");
+		props.setProperty("annotators", "tokenize, ssplit, pos, parse, sentiment, depparse");
 		pipeline = new StanfordCoreNLP(props);
 	}
 	
@@ -96,5 +99,26 @@ public class InputProcessing {
 		Set<String> verbSynonyms = new HashSet<String>();
 		String sentiment = "neutral";
 		return new AnalyzedInput(nouns, verb, verbSynonyms, sentiment);
+	}
+	
+	public void dependencyParse(String input) {
+		
+		Annotation document = new Annotation(input);
+		pipeline.annotate(document);
+		List<CoreMap> sentences = document.get(SentencesAnnotation.class);
+		for (CoreMap sentence : sentences) {
+			SemanticGraph dependencies = sentence.get(BasicDependenciesAnnotation.class);
+			System.out.println(dependencies);
+			System.out.println(dependencies.vertexSet());
+		}
+		
+		
+		
+	}
+	
+	public static void main(String[] args) {
+		String text = "open the bathroom door with the bathroom key";
+		InputProcessing ip = new InputProcessing();
+		ip.dependencyParse(text);
 	}
 }

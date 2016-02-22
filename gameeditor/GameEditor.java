@@ -2,6 +2,7 @@ package gameeditor;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
@@ -398,12 +399,14 @@ public class GameEditor {
 			String doorDesc = prompt("Door description:");
 			String doorDest = promptAndVerify("Door destination:", locations.keySet());
 			String doorOrig = promptAndVerify("Door origin:", locations.keySet());
+			String doorDir = prompt("Door direction:").toUpperCase();
+			Direction doorDirection = Direction.valueOf(doorDir);
 			String keyName = prompt("Key name:");
 			String keyDesc = prompt("Key description:");
 			
 			kb.addOpen(keyName, doorName);
 			Key k = new Key(keyName, keyDesc, doorName);
-			LockedDoor ld = new LockedDoor(doorName, doorDesc, doorOrig, doorDest);
+			LockedDoor ld = new LockedDoor(doorName, doorDesc, doorOrig, doorDest, doorDirection);
 			items.put(keyName,  k);
 			items.put(doorName, ld);
 			
@@ -568,7 +571,7 @@ public class GameEditor {
 			String desc = prompt("Container description:");
 			String vol = prompt("Volume");
 			volume = Integer.parseInt(vol);
-			Container c = new Container(name, desc, volume);
+			Container c = new Container(name, desc, volume, kb);
 			while (true) {
 				String choice = prompt("Add item? (y/n)");
 				if (!choice.equals("y")) break;

@@ -33,7 +33,7 @@ fact : a opens b.
 fact : a fitsinside b.
 fact : a inside b.
 
-rule : I fitsinside C if C hasproperty container and I hasvolume VI and C hasvolume VC and VI < VC.
+rule : I fitsinside C if C hasproperty container.
 
 % Symmetric relation
 fact : X linkedwith Y :- fact : Y linkedwith X.

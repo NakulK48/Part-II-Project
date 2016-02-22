@@ -8,16 +8,18 @@ public class LockedDoor extends Item {
 	public String targetLocation;
 	public Direction direction;
 	
-	public LockedDoor(String name, String description, String originLocation, String targetLocation) {
+	public LockedDoor(String name, String description, String originLocation, String targetLocation, Direction direction) {
 		super(name, description, false);
 		this.originLocation = originLocation;
 		this.targetLocation = targetLocation;
+		this.direction = direction;
 	}
 	
 	public LockedDoor(LockedDoor ld) {
 		super(ld);
 		this.originLocation = ld.originLocation;
 		this.targetLocation = ld.targetLocation;
+		this.direction = ld.direction;
 	}
 	
 	public void open(HashMap<String, Location> locs) {
