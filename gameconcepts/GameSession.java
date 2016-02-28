@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
@@ -13,6 +14,7 @@ import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
+import alice.tuprolog.InvalidTheoryException;
 import alice.tuprolog.NoSolutionException;
 import alice.tuprolog.SolveInfo;
 import gameeditor.Game;
@@ -52,27 +54,12 @@ public class GameSession implements Serializable {
 		this.locations = locations;
 		this.items = items;
 		this.links = links;
-		
-		positiveResponses.add("Your enthusiasm is delightful.");
-		positiveResponses.add("I'm glad you're so happy about all this.");
-		positiveResponses.add("Keep up the good mood!");
-		
-		negativeResponses.add("There's no need to be so negative.");
-		negativeResponses.add("Cheer up, would you?");
-		negativeResponses.add("I don't appreciate your tone.");
 	}
 	
 	// For internal testing and debugging.
 	private GameSession() {
 		currentInventory = new Inventory();
 		ip = new InputProcessing();
-		positiveResponses.add("Your enthusiasm is delightful.");
-		positiveResponses.add("I'm glad you're so happy about all this.");
-		positiveResponses.add("Keep up the good mood!");
-		
-		negativeResponses.add("There's no need to be so negative.");
-		negativeResponses.add("Cheer up, would you?");
-		negativeResponses.add("I don't appreciate your tone.");
 	}
 	
 	public static String prompt(String promptText) {
@@ -92,7 +79,7 @@ public class GameSession implements Serializable {
 		System.out.println(loc.generateText());
 	}
 	
-	public void moveLocation(String direction) {
+	public void moveLocation(Direction direction) {
 		if (currentLocation.exits.containsKey(direction)) {
 			String destName = currentLocation.exits.get(direction);
 			enterNewLocation(locations.get(destName));
@@ -135,12 +122,12 @@ public class GameSession implements Serializable {
 	}
 	
 	public void inspectItem(String itemName) {
-		if (!currentInventory.hasItem(itemName)) {
+		if (!currentInventory.hasItem(itemName) && !currentLocation.availableItems.hasItem(itemName)) {
 			System.out.println("You don't have that item!");
 			return;
 		}
 		Item item = items.get(itemName);
-		item.printDetails();
+		item.printInGameDetails();
 	}
 	
 	public void takeActionOnItem(String action, String itemName) throws ItemNotFoundException {
@@ -207,7 +194,7 @@ public class GameSession implements Serializable {
 						direction = s.nextLine();
 					}
 					else direction = words.get(1);
-					moveLocation(direction.toLowerCase());
+					moveLocation(Direction.valueOf(direction.toUpperCase()));
 					break;
 				case "take":
 					if (input.contains("from")) {
@@ -318,15 +305,16 @@ public class GameSession implements Serializable {
 			return;
 		}
 		
-		String rawItemName1 = ai.nouns.get(0);
-		String rawItemName2 = ai.nouns.get(1);
+		String rawItemName = ai.nouns.get(0);
+		String rawContainerName = ai.nouns.get(1);
 		
-		Set<String> availableItems = currentInventory.getItemNames();
-		availableItems.addAll(currentLocation.availableItems.items);
+		Set<String> availableItems = items.keySet();
+		Set<String> availableContainers = currentInventory.getItemNames();
+		availableContainers.addAll(currentLocation.availableItems.items);
 		
 		try {
-			String item = didYouMean(getPossibleItems(availableItems, rawItemName1));
-			String container = didYouMean(getPossibleItems(availableItems, rawItemName2));
+			String item = didYouMean(getPossibleItems(availableItems, rawItemName));
+			String container = didYouMean(getPossibleItems(availableContainers, rawContainerName));
 			if (!kb.isInside(item, container)) {
 				System.out.println("That item isn't inside the container...");
 				return;
@@ -335,6 +323,7 @@ public class GameSession implements Serializable {
 			kb.takeOut(item, container);
 			Item i = items.get(item);
 			currentInventory.addItem(i);
+			System.out.println("Took " + item + " from " + container);
 		}
 		catch (InvalidInputException e) {
 			System.out.println("Sorry, the item you selected was not recognised.");
@@ -367,6 +356,7 @@ public class GameSession implements Serializable {
 			kb.putInside(item, container);
 			Item i = items.get(item);
 			currentInventory.removeItem(i);
+			System.out.println("Put " + item + " in " + container);
 		}
 		catch (InvalidInputException e) {
 			System.out.println("Sorry, the item you selected was not recognised.");
@@ -374,13 +364,14 @@ public class GameSession implements Serializable {
 		}
 	}
 	
-	private void openLockedDoor(String input) throws InvalidInputException, NoSolutionException, SameItemException {
+	private void openLockedDoor(String input) throws InvalidInputException, NoSolutionException, SameItemException, InvalidTheoryException {
 		AnalyzedInput ai = ip.analyzeInput(input);
 		
 		if (ai.nouns.size() != 2) {
 			System.out.println("Please select a door and a key");
 			return;
 		}
+		
 		
 		String rawDoorName = ai.nouns.get(0);
 		String rawKeyName = ai.nouns.get(1);
@@ -395,13 +386,12 @@ public class GameSession implements Serializable {
 			Item id = items.get(doorName);
 			if (!(ik instanceof Key)) {
 				System.out.println("That isn't a key!");
-				System.out.println(ik);
 				return;
 			}
 			if (!(id instanceof LockedDoor)) {
 				System.out.println("That isn't a door!");
 			}
-			if (!kb.hasOpen(doorName, keyName)) {
+			if (!kb.hasOpen(keyName, doorName)) {
 				System.out.println("Those don't go together...");
 				return;
 			}
@@ -428,6 +418,8 @@ public class GameSession implements Serializable {
 	}
 	
 	private String didYouMean(Set<String> poss) throws InvalidInputException {
+		//Only one possibility: return it.
+		if (poss.size() == 1) return new LinkedList<String>(poss).get(0);
 		System.out.println("Did you mean:");
 		System.out.println(poss);
 		String choice = prompt("Type an item name or 'no' to return");
@@ -530,14 +522,6 @@ public class GameSession implements Serializable {
 		
 		String action = ai.verb;
 		HashSet<String> possibleActions = new HashSet<String>();
-		
-		if (ai.sentiment.equals("Positive")) {
-			System.out.println(randomChoice(positiveResponses));
-		}
-		
-		if (ai.sentiment.equals("Negative")) {
-			System.out.println(randomChoice(negativeResponses));
-		}
 		
 		if (!actions.containsKey(action)) {
 			String latestSynonym = null;

@@ -4,35 +4,17 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 
 import edu.smu.tspell.wordnet.Synset;
 import edu.smu.tspell.wordnet.SynsetType;
 import edu.smu.tspell.wordnet.VerbSynset;
 import edu.smu.tspell.wordnet.WordNetDatabase;
-import edu.stanford.nlp.ie.machinereading.structure.MachineReadingAnnotations.DependencyAnnotation;
-import edu.stanford.nlp.ling.CoreAnnotations.PartOfSpeechAnnotation;
-import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
-import edu.stanford.nlp.ling.CoreAnnotations.TextAnnotation;
-import edu.stanford.nlp.ling.CoreAnnotations.TokensAnnotation;
-import edu.stanford.nlp.ling.CoreLabel;
-import edu.stanford.nlp.pipeline.Annotation;
-import edu.stanford.nlp.pipeline.StanfordCoreNLP;
-import edu.stanford.nlp.semgraph.SemanticGraph;
-import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations.BasicDependenciesAnnotation;
-import edu.stanford.nlp.sentiment.SentimentCoreAnnotations.SentimentClass;
-import edu.stanford.nlp.util.CoreMap;
+import edu.stanford.nlp.ie.util.RelationTriple;
+import edu.stanford.nlp.simple.Document;
+import edu.stanford.nlp.simple.Sentence;
 
 public class InputProcessing {
-	
-	Properties props = new Properties();
-	StanfordCoreNLP pipeline;
-	
-	public InputProcessing() {
-		props.setProperty("annotators", "tokenize, ssplit, pos, parse, sentiment, depparse");
-		pipeline = new StanfordCoreNLP(props);
-	}
 	
 	// Requires '-Dwordnet.database.dir=C:\WordNet\2.1\dict\' as a VM arg.
 	public static Set<String> getVerbSynonymsAndHypernyms(String word) {
@@ -53,6 +35,7 @@ public class InputProcessing {
 		return allSynonyms;
 	}
 	
+	/*
 	public AnalyzedInput analyzeInput(String text) throws InvalidInputException {
 		Annotation document = new Annotation(text);
 		pipeline.annotate(document);
@@ -100,25 +83,91 @@ public class InputProcessing {
 		String sentiment = "neutral";
 		return new AnalyzedInput(nouns, verb, verbSynonyms, sentiment);
 	}
+	*/
 	
-	public void dependencyParse(String input) {
+	public AnalyzedInput analyzeInput(String input) throws InvalidInputException {
+		AnalyzedInput ai = null;
 		
-		Annotation document = new Annotation(input);
-		pipeline.annotate(document);
-		List<CoreMap> sentences = document.get(SentencesAnnotation.class);
-		for (CoreMap sentence : sentences) {
-			SemanticGraph dependencies = sentence.get(BasicDependenciesAnnotation.class);
-			System.out.println(dependencies);
-			System.out.println(dependencies.vertexSet());
-		}
+		ai = ieParse(input);
+		if (ai.nouns.size() > 0) return ai;
 		
+		ai = posParse(input);
 		
-		
+		return ai;
 	}
 	
-	public static void main(String[] args) {
-		String text = "open the bathroom door with the bathroom key";
+	public String getFirstWord(String input) {
+		LinkedList<String> newInput = new LinkedList<String>(Arrays.asList(input.split(" ")));
+		return newInput.get(0);
+	}
+	
+	public String removeFirstWord(String input) {
+		LinkedList<String> newInput = new LinkedList<String>(Arrays.asList(input.split(" ")));
+		newInput.remove(0);
+		return String.join(" ", newInput);
+	}
+	
+	private AnalyzedInput posParse(String input) throws InvalidInputException {
+		List<String> nouns = new LinkedList<String>();
+		String verb = null;
+		Set<String> verbSynonyms = null;
+		
+		Document doc = new Document(input);
+		
+		if (doc.sentences().size() != 1) {
+			throw new InvalidInputException();
+		}
+		
+		// There should only be one sentence.
+		for (Sentence sentence : doc.sentences()) {
+			String currentNoun = "";
+			for (int i = 0; i < sentence.length(); i++) {
+				String word = sentence.word(i);
+				String tag = sentence.posTag(i);
+				// Include preceding adjective in the noun.
+				if (tag.startsWith("J")) currentNoun += word + " ";
+				// Bring in all previous adjectives and the noun itself
+				if (tag.startsWith("N")) {
+					nouns.add(currentNoun + word);
+					currentNoun = "";
+				}
+				// Only one verb
+				if (tag.startsWith("V")) verb = word;
+			}
+		}
+		verbSynonyms = getVerbSynonymsAndHypernyms(verb);
+		return new AnalyzedInput(nouns, verb, verbSynonyms);
+	}
+	
+	private AnalyzedInput ieParse(String input) {
+		
+		List<String> nouns = new LinkedList<String>();
+		
+		String verb = getFirstWord(input);
+		Set<String> verbSyn = getVerbSynonymsAndHypernyms(verb);
+		
+		String text = removeFirstWord(input);
+		
+		Document doc = new Document(text);
+		for (Sentence s : doc.sentences()) {
+			for (RelationTriple triple : s.openieTriples()) {
+				nouns.add(triple.subjectGloss());
+				nouns.add(triple.objectGloss());
+			}
+			
+		}
+		
+		AnalyzedInput ai = new AnalyzedInput(nouns, verb, verbSyn);
+		return ai;
+	}
+	
+	public static void main(String[] args) throws InvalidInputException {
+		String text1 = "burn plank";
+		String text2 = "open red door with red key";
+		
 		InputProcessing ip = new InputProcessing();
-		ip.dependencyParse(text);
+		System.out.println(ip.analyzeInput(text1));
+		System.out.println(ip.analyzeInput(text2));
+		//System.out.println(ip.analyzeInput(text));
 	}
 }

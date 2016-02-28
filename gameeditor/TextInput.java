@@ -35,7 +35,7 @@ public class TextInput extends JPanel implements ActionListener {
             	item.setProperties(propsList);
             	kb.addProperties(item.properties, item.name);
             	frame.dispose();
-            	item.printDetails();
+            	item.printEditorDetails();
             }
         };
 

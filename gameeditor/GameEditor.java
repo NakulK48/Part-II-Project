@@ -253,7 +253,7 @@ public class GameEditor {
 				manageContainer(itemName);
 				return;
 			}
-			item.printDetails();
+			item.printEditorDetails();
 			
 			System.out.println("(1) Edit description");
 			System.out.println("(2) Set properties");
@@ -285,7 +285,7 @@ public class GameEditor {
 		while (true) {
 			System.out.println();
 			Container c = (Container) items.get(name);
-			c.printDetails();
+			c.printEditorDetails();
 			
 			System.out.println("(1) Edit description");
 			System.out.println("(2) Set properties");
@@ -571,11 +571,13 @@ public class GameEditor {
 			String desc = prompt("Container description:");
 			String vol = prompt("Volume");
 			volume = Integer.parseInt(vol);
-			Container c = new Container(name, desc, volume, kb);
+			String takableString = prompt("Takable? (y/n)");
+			boolean takable = !takableString.startsWith("n");
+			Container c = new Container(name, desc, volume, takable, kb);
 			while (true) {
 				String choice = prompt("Add item? (y/n)");
 				if (!choice.equals("y")) break;
-				String itemName = prompt(items.toString());
+				String itemName = prompt(items.keySet().toString());
 				if (!items.containsKey(itemName)) {
 					System.out.println("Item not recognised.");
 					continue;

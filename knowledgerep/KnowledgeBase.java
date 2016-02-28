@@ -53,18 +53,22 @@ public class KnowledgeBase implements Cloneable, Serializable {
 		this.rules = kb.rules;
 	}
 	
+	public static String generateFactForQuery(String functor, String arg1, String arg2) {
+		return sanitiseString(arg1) + " " + functor + " " + sanitiseString(arg2);
+	}
+	
 	public static String generateFact(String functor, String arg1, String arg2) {
-		return sanitiseString(arg1) + " " + functor + " " + sanitiseString(arg2) + "."; 
+		return generateFactForQuery(functor, arg1, arg2) + "."; 
 	}
 	
 	public void addFact(String fact) {
-		facts.add(fact);
+		facts.add("fact : " + fact);
 	}
 	
 	public void addProperty(String property, String item) {
 		// Because Prolog can be very stupid.
 		if (property.replace(" ", "").equals("")) return;
-		String fact = "fact : " + sanitiseString(item) + " hasproperty " + sanitiseString(property) + ".";
+		String fact = generateFact("hasproperty", item, property);
 		addFact(fact);
 	}
 	
@@ -87,14 +91,14 @@ public class KnowledgeBase implements Cloneable, Serializable {
 	}
 	
 	public SolveInfo hasProperty(String property, String item) {
-		String fact = sanitiseString(item) + " hasproperty " + sanitiseString(property);
+		String fact = generateFactForQuery("hasproperty", item, property);
 		SolveInfo s = query(fact);
 		return s;
 	}
 	
 	public boolean hasLink(String item1, String item2) throws SameItemException, NoSolutionException {
 		if (item1.equals(item2)) throw new SameItemException();
-		String fact = sanitiseString(item1) + " linkedwith " + sanitiseString(item2);
+		String fact = generateFactForQuery("linkedwith", item1, item2);
 		SolveInfo s = query(fact);
 		return getQuerySuccess(s);
 	}
@@ -102,7 +106,7 @@ public class KnowledgeBase implements Cloneable, Serializable {
 	private void addRelation(String functor, String item1, String item2) throws SameItemException {
 		if (item1.equals(item2)) throw new SameItemException();
 		String fact = generateFact(functor, item1, item2);
-		facts.add(fact);
+		addFact(fact);
 	}
 	
 	public void addLink(String item1, String item2) throws SameItemException {
@@ -113,21 +117,21 @@ public class KnowledgeBase implements Cloneable, Serializable {
 		addRelation("opens", key, door);
 	}
 	
-	public boolean hasOpen(String key, String door) throws SameItemException, NoSolutionException {
+	public boolean hasOpen(String key, String door) throws SameItemException, NoSolutionException, InvalidTheoryException {
 		if (key.equals(door)) throw new SameItemException();
-		String fact = generateFact("opens", key, door);
+		String fact = generateFactForQuery("opens", key, door);
 		SolveInfo s = query(fact);
 		return getQuerySuccess(s);
 	}
 	
 	public boolean fitsInside(String item, String container) throws NoSolutionException {
-		String fact = generateFact("fitsInside", item, container);
+		String fact = generateFactForQuery("fitsInside", item, container);
 		SolveInfo s = query(fact);
 		return getQuerySuccess(s);
 	}
 	
 	public boolean isInside(String item, String container) throws NoSolutionException {
-		String fact = generateFact("inside", item, container);
+		String fact = generateFactForQuery("inside", item, container);
 		SolveInfo s = query(fact);
 		return getQuerySuccess(s);
 	}
@@ -137,7 +141,7 @@ public class KnowledgeBase implements Cloneable, Serializable {
 	}
 	
 	public void takeOut(String item, String container) {
-		String fact = generateFact(item, "inside", container);
+		String fact = generateFact("inside", item, container);
 		facts.remove(fact);
 	}
 	
@@ -198,6 +202,7 @@ public class KnowledgeBase implements Cloneable, Serializable {
 			return null;
 		} catch (MalformedGoalException e) {
 			System.out.println("Your query is invalid!");
+			e.printStackTrace();
 			return null;
 		}
 	}

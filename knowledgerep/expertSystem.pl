@@ -14,13 +14,15 @@
 :- op(100, xfx, hasproperty).
 :- op(100, xfx, knowsabout).
 :- op(100, xfx, linkedwith).
+:- op(100, xfx, opens).
+:- op(100, xfx, fitsinside).
+:- op(100, xfx, inside).
+
 :- op(50, xfy, '&'). % x hasproperty a&b
 
 fact : a and a.
 fact : item hasproperty prop.
 null implies null.
-
-fact : bob knowsabout walls.
 
 rule : X hasproperty B if X hasproperty A :- A implies B.
 
@@ -32,6 +34,8 @@ fact : a linkedwith b.
 fact : a opens b.
 fact : a fitsinside b.
 fact : a inside b.
+
+fact : brown_key opens brown_door.
 
 rule : I fitsinside C if C hasproperty container.
 

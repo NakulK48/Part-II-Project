@@ -8,20 +8,17 @@ public class AnalyzedInput {
 	public List<String> nouns;
 	public String verb;
 	public Set<String> verbSynonyms;
-	public String sentiment;
 	
-	public AnalyzedInput(List<String> nouns, String verb, Set<String> verbSynonyms, String sentiment) {
+	public AnalyzedInput(List<String> nouns, String verb, Set<String> verbSynonyms) {
 		super();
 		this.nouns = nouns;
 		this.verb = verb;
 		this.verbSynonyms = verbSynonyms;
-		this.sentiment = sentiment;
 	}
 
 	@Override
 	public String toString() {
-		return "AnalyzedInput [nouns=" + nouns + ", verb=" + verb + ", verbSynonyms=" + verbSynonyms + ", sentiment="
-				+ sentiment + "]";
+		return "AnalyzedInput [nouns=" + nouns + ", verb=" + verb + ", verbSynonyms=" + verbSynonyms + "]";
 	}
 
 	

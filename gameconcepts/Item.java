@@ -86,7 +86,7 @@ public class Item implements Serializable {
 		this.properties = new HashSet<String>(properties);
 	}
 	
-	public void printDetails() {
+	public void printEditorDetails() {
 		System.out.println();
 		System.out.println(name.toUpperCase());
 		System.out.println(description);
@@ -95,6 +95,11 @@ public class Item implements Serializable {
 		System.out.println("Properties:");
 		System.out.println(properties);
 		System.out.println();
+	}
+	
+	public void printInGameDetails() {
+		System.out.println(description);
+		if (!properties.isEmpty()) System.out.println("It is " + String.join(", ", properties));
 	}
 	
 }

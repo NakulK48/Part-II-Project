@@ -26,5 +26,6 @@ public class LockedDoor extends Item {
 		Location originLoc = locs.get(originLocation);
 		originLoc.addExit(direction, targetLocation, locs);
 		originLoc.availableItems.removeItem(this.name);
+		System.out.println("a door opens to the " + direction);
 	}
 }
