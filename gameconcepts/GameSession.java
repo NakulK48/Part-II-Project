@@ -90,6 +90,9 @@ public class GameSession implements Serializable {
 	}
 	
 	public void takeItem(String itemName) {
+		
+		itemName = itemName.toLowerCase();
+		
 		if (!currentLocation.availableItems.hasItem(itemName)) {
 			System.out.println("That item is not present!");
 			return;
@@ -105,20 +108,19 @@ public class GameSession implements Serializable {
 			System.out.println("Took " + itemName);
 		}
 		else {
-			Set<String> poss = getPossibleItems(currentLocation.availableItems.items, itemName);
-			if (poss.size() == 0) {
-				System.out.println("No such item is available!");
-				return;
+			String choice;
+			try {
+				choice = didYouMean(getPossibleItems(currentLocation.availableItems.items, itemName), itemName);
+				takeItem(choice);
+			} catch (InvalidInputException e) {
+				printItemNotRecognised(itemName);
 			}
-			System.out.println("Did you mean:");
-			System.out.println(poss);
-			String choice = prompt("Enter one of the above items or type 'no'");
-			if (choice.equals("no")) return;
-			if (!poss.contains(choice)) {
-				System.out.println("Sorry, that item is not available.");
-			}
-			takeItem(choice);
+			
 		}
+	}
+	
+	private void printItemNotRecognised(String itemName) {
+		System.out.println("Sorry, that item - " + itemName + " - was not recognised");
 	}
 	
 	public void inspectItem(String itemName) {
@@ -150,6 +152,7 @@ public class GameSession implements Serializable {
 			return;
 		}
 		
+
 		Action a = actions.get(action);
 		
 		String property = a.property;
@@ -197,11 +200,13 @@ public class GameSession implements Serializable {
 					moveLocation(Direction.valueOf(direction.toUpperCase()));
 					break;
 				case "take":
+				case "pick":
 					if (input.contains("from")) {
 						takeItemFromContainer(input);
 					} else {
-						String availableItemName = String.join(" ", words.subList(1, words.size()));
-						takeItem(availableItemName.toLowerCase());
+						AnalyzedInput ai = ip.analyzeInput(input);
+						String availableItemName = ai.nouns.get(0);
+						takeItem(availableItemName);
 					}
 					break;
 				case "put":
@@ -268,8 +273,8 @@ public class GameSession implements Serializable {
 		availableItems.addAll(currentLocation.availableItems.items);
 		
 		try {
-			String item1 = didYouMean(getPossibleItems(availableItems, rawItemName1));
-			String item2 = didYouMean(getPossibleItems(availableItems, rawItemName2));
+			String item1 = didYouMean(getPossibleItems(availableItems, rawItemName1), rawItemName1);
+			String item2 = didYouMean(getPossibleItems(availableItems, rawItemName2), rawItemName2);
 			if (!kb.hasLink(item1, item2)) {
 				System.out.println("Those don't go together...");
 				return;
@@ -290,7 +295,7 @@ public class GameSession implements Serializable {
 			else currentLocation.availableItems.addItem(link.resultItem);
 		}
 		catch (InvalidInputException e) {
-			System.out.println("Sorry, the item you selected was not recognised.");
+			printItemNotRecognised(e.x);
 			return;
 		}
 		
@@ -313,20 +318,21 @@ public class GameSession implements Serializable {
 		availableContainers.addAll(currentLocation.availableItems.items);
 		
 		try {
-			String item = didYouMean(getPossibleItems(availableItems, rawItemName));
-			String container = didYouMean(getPossibleItems(availableContainers, rawContainerName));
+			String item = didYouMean(getPossibleItems(availableItems, rawItemName), rawItemName);
+			String container = didYouMean(getPossibleItems(availableContainers, rawContainerName), rawContainerName);
 			if (!kb.isInside(item, container)) {
 				System.out.println("That item isn't inside the container...");
 				return;
 			}
 			
-			kb.takeOut(item, container);
 			Item i = items.get(item);
+			Container c = (Container) items.get(container);
+			c.removeItem(item, kb);
 			currentInventory.addItem(i);
 			System.out.println("Took " + item + " from " + container);
 		}
 		catch (InvalidInputException e) {
-			System.out.println("Sorry, the item you selected was not recognised.");
+			printItemNotRecognised(e.x);
 			return;
 		}
 	}
@@ -346,20 +352,21 @@ public class GameSession implements Serializable {
 		availableContainers.addAll(currentLocation.availableItems.items);
 		
 		try {
-			String item = didYouMean(getPossibleItems(availableItems, rawItemName1));
-			String container = didYouMean(getPossibleItems(availableContainers, rawItemName2));
+			String item = didYouMean(getPossibleItems(availableItems, rawItemName1), rawItemName1);
+			String container = didYouMean(getPossibleItems(availableContainers, rawItemName2), rawItemName2);
 			if (!kb.fitsInside(item, container)) {
 				System.out.println("The " + item + " does not fit inside the " + container);
 				return;
 			}
 			
-			kb.putInside(item, container);
 			Item i = items.get(item);
+			Container c = (Container) items.get(container);
+			c.addItem(item, kb);
 			currentInventory.removeItem(i);
 			System.out.println("Put " + item + " in " + container);
 		}
 		catch (InvalidInputException e) {
-			System.out.println("Sorry, the item you selected was not recognised.");
+			printItemNotRecognised(e.x);
 			return;
 		}
 	}
@@ -369,6 +376,7 @@ public class GameSession implements Serializable {
 		
 		if (ai.nouns.size() != 2) {
 			System.out.println("Please select a door and a key");
+			System.out.println("(Use 'inspect' to check the contents of a container)");
 			return;
 		}
 		
@@ -380,8 +388,8 @@ public class GameSession implements Serializable {
 		availableItems.addAll(currentLocation.availableItems.items);
 		
 		try {
-			String doorName = didYouMean(getPossibleItems(availableItems, rawDoorName));
-			String keyName = didYouMean(getPossibleItems(availableItems, rawKeyName));
+			String doorName = didYouMean(getPossibleItems(availableItems, rawDoorName), rawDoorName);
+			String keyName = didYouMean(getPossibleItems(availableItems, rawKeyName), rawKeyName);
 			Item ik = items.get(keyName);
 			Item id = items.get(doorName);
 			if (!(ik instanceof Key)) {
@@ -397,13 +405,12 @@ public class GameSession implements Serializable {
 			}
 			
 			LockedDoor ld = (LockedDoor) items.get(doorName);
-			Key k = (Key) items.get(keyName);
 			
 			ld.open(locations);
 			
 		}
 		catch (InvalidInputException e) {
-			System.out.println("Sorry, the item you selected was not recognised.");
+			printItemNotRecognised(e.x);
 			return;
 		}
 	}
@@ -417,7 +424,8 @@ public class GameSession implements Serializable {
 		return null;
 	}
 	
-	private String didYouMean(Set<String> poss) throws InvalidInputException {
+	private String didYouMean(Set<String> poss, String rawItemName) throws InvalidInputException {
+		//No possibilities: say as much.
 		//Only one possibility: return it.
 		if (poss.size() == 1) return new LinkedList<String>(poss).get(0);
 		System.out.println("Did you mean:");
@@ -428,7 +436,7 @@ public class GameSession implements Serializable {
 		}
 		
 		else {
-			throw new InvalidInputException();
+			throw new InvalidInputException(rawItemName);
 		}
 	}
 	
@@ -448,7 +456,7 @@ public class GameSession implements Serializable {
 		return (1 - levenshtein / (max - min));
 	}
 	
-	private Set<String> getPossibleItems(Set<String> allItems, String input) {
+	private Set<String> getPossibleItems(Set<String> allItems, String input) throws InvalidInputException {
 		Set<String> possibleItems = new HashSet<String>();
 		
 		//Simplest case: the input is the exact name of an item.
@@ -479,6 +487,10 @@ public class GameSession implements Serializable {
 			}
 		}
 		
+		if (possibleItems.size() == 0) {
+			throw new InvalidInputException(input);
+		}
+		
 		return possibleItems;
 	}
 	
@@ -498,25 +510,11 @@ public class GameSession implements Serializable {
 		else {
 			Set<String> inventoryAndRoomItems = currentInventory.getItemNames();
 			inventoryAndRoomItems.addAll(currentLocation.availableItems.getItemNames());
-			Set<String> possibleItems = getPossibleItems(inventoryAndRoomItems, noun);
-			if (possibleItems.size() == 0) {
-				possibleItems = getPossibleItems(items.keySet(), noun);
-				if (possibleItems.size() == 0) {
-					System.out.println("Sorry, this world knows of no such item.");
-				}
-				else {
-					System.out.println("I know of an item like that, but it's not available here.");
-				}
-			}
-			
-			System.out.println("Did you mean:");
-			System.out.println(possibleItems);
-			String choice = prompt("Select an item name, or type 'cancel'");
-			if (possibleItems.contains(choice)) {
-				item = choice;
-			}
-			else {
-				System.out.println("Sorry, that doesn't seem to be an item.");
+
+			try {
+				item = didYouMean(getPossibleItems(inventoryAndRoomItems, noun), noun);
+			} catch (InvalidInputException e) {
+				printItemNotRecognised(e.x);
 			}
 		}
 		
@@ -532,6 +530,10 @@ public class GameSession implements Serializable {
 				}
 			}
 			
+			if (possibleActions.size() == 0) {
+				System.out.println("Such an action cannot be performed in this world.");
+				return;
+			}
 			if (possibleActions.size() == 1) action = latestSynonym;
 			else if (possibleActions.size() > 0){
 				System.out.println("Perhaps you meant one of: ");

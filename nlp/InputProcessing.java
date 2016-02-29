@@ -1,5 +1,7 @@
 package nlp;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -16,7 +18,26 @@ import edu.stanford.nlp.simple.Sentence;
 
 public class InputProcessing {
 	
-	// Requires '-Dwordnet.database.dir=C:\WordNet\2.1\dict\' as a VM arg.
+	public InputProcessing() {
+		System.setProperty("wordnet.database.dir", "C:/WordNet/2.1/dict/");
+		
+		System.out.println("\nLoading; please wait...\n");
+		// Store original print stream.
+		PrintStream err = System.err;
+
+		// Silence all writers to print stream to avoid annoying CoreNLP setup text.
+		System.setErr(new PrintStream(new OutputStream() {
+		    public void write(int b) {
+		    }
+		}));
+		
+		// So the loading time is now and not later.
+		analyzeInput("open red door with red key");
+		
+		// Re-enable original print stream.
+		System.setErr(err);   
+	}
+	
 	public static Set<String> getVerbSynonymsAndHypernyms(String word) {
 		WordNetDatabase wndb = WordNetDatabase.getFileInstance();
 		Synset[] sss = wndb.getSynsets(word, SynsetType.VERB);
@@ -35,57 +56,7 @@ public class InputProcessing {
 		return allSynonyms;
 	}
 	
-	/*
-	public AnalyzedInput analyzeInput(String text) throws InvalidInputException {
-		Annotation document = new Annotation(text);
-		pipeline.annotate(document);
-		List<CoreMap> sentences = document.get(SentencesAnnotation.class);
-		if (sentences.size() != 1) {
-			throw new InvalidInputException();
-		}
-		List<String> nouns = new LinkedList<String>();
-		String verb = null;
-		Set<String> verbSynonyms = null;
-		String sentiment = null;
-		
-		// There should only be one sentence.
-		for (CoreMap sentence : sentences) {
-			for (CoreLabel token : sentence.get(TokensAnnotation.class)) {
-				String word = token.getString(TextAnnotation.class);
-				String pos = token.getString(PartOfSpeechAnnotation.class);
-				if (pos.startsWith("N")) {
-					nouns.add(word);
-				}
-				if (pos.startsWith("V")) {
-					verb = word;
-					verbSynonyms = getVerbSynonymsAndHypernyms(word);
-				}
-			}
-			
-			sentiment = sentence.get(SentimentClass.class);
-		}
-		
-		if (nouns.size() == 0 || verb == null) {
-			// Fall back on verb noun if the more sophisticated parse fails.
-			return naivelyAnalyzeInput(text);
-		}
-		
-		return new AnalyzedInput(nouns, verb, verbSynonyms, sentiment);
-	}
-	
-	public AnalyzedInput naivelyAnalyzeInput(String text) {
-		String[] split = text.split(" ");
-		List<String> nouns = new LinkedList<String>();
-		String noun = split[1];
-		nouns.add(noun);
-		String verb = split[0];
-		Set<String> verbSynonyms = new HashSet<String>();
-		String sentiment = "neutral";
-		return new AnalyzedInput(nouns, verb, verbSynonyms, sentiment);
-	}
-	*/
-	
-	public AnalyzedInput analyzeInput(String input) throws InvalidInputException {
+	public AnalyzedInput analyzeInput(String input) {
 		AnalyzedInput ai = null;
 		
 		ai = ieParse(input);
@@ -107,35 +78,31 @@ public class InputProcessing {
 		return String.join(" ", newInput);
 	}
 	
-	private AnalyzedInput posParse(String input) throws InvalidInputException {
+	private AnalyzedInput posParse(String input) {
 		List<String> nouns = new LinkedList<String>();
-		String verb = null;
+		String verb = getFirstWord(input);
 		Set<String> verbSynonyms = null;
 		
 		Document doc = new Document(input);
 		
-		if (doc.sentences().size() != 1) {
-			throw new InvalidInputException();
-		}
+		// There should only be one sentence. Ignore others.
 		
-		// There should only be one sentence.
-		for (Sentence sentence : doc.sentences()) {
-			String currentNoun = "";
-			for (int i = 0; i < sentence.length(); i++) {
-				String word = sentence.word(i);
-				String tag = sentence.posTag(i);
-				// Include preceding adjective in the noun.
-				if (tag.startsWith("J")) currentNoun += word + " ";
-				// Bring in all previous adjectives and the noun itself
-				if (tag.startsWith("N")) {
-					nouns.add(currentNoun + word);
-					currentNoun = "";
-				}
-				// Only one verb
-				if (tag.startsWith("V")) verb = word;
+		Sentence sentence = doc.sentence(0);
+		String currentNoun = "";
+		for (int i = 0; i < sentence.length(); i++) {
+			String word = sentence.word(i);
+			String tag = sentence.posTag(i);
+			// Include preceding adjective in the noun.
+			if (tag.startsWith("J")) currentNoun += word + " ";
+			// Bring in all previous adjectives and the noun itself
+			if (tag.startsWith("N")) {
+				nouns.add(currentNoun + word);
+				currentNoun = "";
 			}
+			// Only one verb
+			if (tag.startsWith("V")) verb = word;
 		}
-		verbSynonyms = getVerbSynonymsAndHypernyms(verb);
+		if (verb != null) verbSynonyms = getVerbSynonymsAndHypernyms(verb);
 		return new AnalyzedInput(nouns, verb, verbSynonyms);
 	}
 	
@@ -149,12 +116,14 @@ public class InputProcessing {
 		String text = removeFirstWord(input);
 		
 		Document doc = new Document(text);
-		for (Sentence s : doc.sentences()) {
-			for (RelationTriple triple : s.openieTriples()) {
-				nouns.add(triple.subjectGloss());
-				nouns.add(triple.objectGloss());
-			}
-			
+		
+		// There should only be one sentence. Ignore others.
+		Sentence sentence = doc.sentence(0);
+		
+		// Only one of these as well, but no easy way of getting it by itself.
+		for (RelationTriple triple : sentence.openieTriples()) {
+			nouns.add(triple.subjectGloss());
+			nouns.add(triple.objectGloss());
 		}
 		
 		AnalyzedInput ai = new AnalyzedInput(nouns, verb, verbSyn);

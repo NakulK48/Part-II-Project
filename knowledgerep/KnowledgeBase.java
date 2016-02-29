@@ -3,6 +3,7 @@ package knowledgerep;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -19,7 +20,6 @@ import alice.tuprolog.SolveInfo;
 import alice.tuprolog.Term;
 import alice.tuprolog.Theory;
 import alice.tuprolog.UnknownVarException;
-import gameconcepts.Item;
 
 public class KnowledgeBase implements Cloneable, Serializable {
 	
@@ -36,19 +36,29 @@ public class KnowledgeBase implements Cloneable, Serializable {
 	}
 	
 	public KnowledgeBase() throws FileNotFoundException, IOException {
-		base = new Theory(new FileInputStream("knowledgerep/expertSystem.pl"));
+		try {
+			base = new Theory(new FileInputStream("knowledgerep/expertSystem.pl"));
+		} catch (FileNotFoundException e) {
+			InputStream stream = getClass().getResourceAsStream("/knowledgerep/expertSystem.pl");
+			base = new Theory(stream);
+		}
 		this.facts = new HashSet<String>();
 		this.rules = new HashSet<String>();
 	}
 	
 	public KnowledgeBase(HashSet<String> facts, HashSet<String> rules) throws FileNotFoundException, IOException {
-		base = new Theory(new FileInputStream("knowledgerep/expertSystem.pl"));
+		try {
+			base = new Theory(new FileInputStream("knowledgerep/expertSystem.pl"));
+		} catch (FileNotFoundException e) {
+			InputStream stream = getClass().getResourceAsStream("/knowledgerep/expertSystem.pl");
+			base = new Theory(stream);
+		}
 		this.facts = facts;
 		this.rules = rules;
 	}
 	
 	public KnowledgeBase(KnowledgeBase kb) throws FileNotFoundException, IOException {
-		base = new Theory(new FileInputStream("knowledgerep/expertSystem.pl"));
+		base = kb.base;
 		this.facts = kb.facts;
 		this.rules = kb.rules;
 	}
