@@ -2,6 +2,7 @@ package nlp;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -16,7 +17,7 @@ import edu.stanford.nlp.ie.util.RelationTriple;
 import edu.stanford.nlp.simple.Document;
 import edu.stanford.nlp.simple.Sentence;
 
-public class InputProcessing {
+public class InputProcessing implements Serializable {
 	
 	public InputProcessing() {
 		System.setProperty("wordnet.database.dir", "C:/WordNet/2.1/dict/");
@@ -89,6 +90,7 @@ public class InputProcessing {
 		
 		Sentence sentence = doc.sentence(0);
 		String currentNoun = "";
+		boolean prevWasNoun = false;
 		for (int i = 0; i < sentence.length(); i++) {
 			String word = sentence.word(i);
 			String tag = sentence.posTag(i);
@@ -96,9 +98,18 @@ public class InputProcessing {
 			if (tag.startsWith("J")) currentNoun += word + " ";
 			// Bring in all previous adjectives and the noun itself
 			if (tag.startsWith("N")) {
-				nouns.add(currentNoun + word);
-				currentNoun = "";
+				if (prevWasNoun) {
+					//handle compound nouns
+					currentNoun = nouns.remove(nouns.size() - 1);
+					nouns.add(currentNoun + " " + word);
+					currentNoun = "";
+				} else {
+					nouns.add(currentNoun + word);
+					currentNoun = "";
+					prevWasNoun = true;
+				}
 			}
+			else prevWasNoun = false;
 			// Only one verb
 			if (tag.startsWith("V")) verb = word;
 		}

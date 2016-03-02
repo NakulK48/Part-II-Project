@@ -84,9 +84,9 @@ public class GameEditor {
 		
 		LinkedList<String> itemsToAdd = new LinkedList<String>();
 		
-		choice = prompt("Items to add to inventory (q to stop):");
 		
 		while (true) {
+			choice = prompt("Items to add to inventory (q to stop):");
 			if (choice.equals("q")) break;
 			if (!items.containsKey(choice)) {
 				System.out.println("Not a valid item.");
@@ -357,6 +357,7 @@ public class GameEditor {
 		Item result = chooseItem(items.keySet());
 		try {
 			Link link = new Link(item1, item2, result, kb);
+			links.add(link);
 		} catch (SameItemException e) {
 			System.out.println("Those cannot be the same item!");
 			createLink();

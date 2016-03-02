@@ -162,8 +162,8 @@ public class GameSession implements Serializable {
 		try {
 			boolean querySuccess = kb.getQuerySuccess(s);
 			if (!querySuccess) {
-				System.out.println(action + " failed because it does not have the property " + property);
-				System.out.println("This is because " + kb.getQueryFailureReason(s));
+				System.out.println(action + " failed because it is not " + property);
+				System.out.println(kb.getQueryFailureReason(s));
 				return;
 			}
 			
@@ -175,6 +175,11 @@ public class GameSession implements Serializable {
 				item.removeProperties(a.propertiesToRemove);
 				kb.addProperties(a.propertiesToAdd, itemName);
 				kb.removeProperties(a.propertiesToRemove, itemName);
+			}
+			
+			for (String name : a.itemsToAdd) {
+				Item i = items.get(name);
+				currentInventory.addItem(i);
 			}
 		} catch (NoSolutionException e) {
 			System.out.println("You can't do that!");
@@ -235,6 +240,8 @@ public class GameSession implements Serializable {
 					System.out.println("open <door> with <key>/");
 					System.out.println("save/restore");
 					System.out.println("or take some action on an item in the room or your inventory.");
+					System.out.println("If you're having trouble, make sure you use articles");
+					System.out.println("e.g. 'take the box' rather than 'take box'");
 					break;
 				case "save":
 					saveGame();
@@ -246,6 +253,9 @@ public class GameSession implements Serializable {
 						break;
 					}
 					restoreFromSave();
+					break;
+				case "q":
+					break;
 				default:
 					if (ip == null) ip = new InputProcessing();
 					AnalyzedInput ai2 = ip.analyzeInput(input);
@@ -253,8 +263,6 @@ public class GameSession implements Serializable {
 			}
 		}
 		catch (Exception e) {
-			//TODO: REMOVE
-			e.printStackTrace();
 			System.out.println("Sorry, I don't understand. Try entering 'help.'");
 		}
 	}
@@ -293,6 +301,9 @@ public class GameSession implements Serializable {
 			
 			if (link.resultItem.takable) currentInventory.addItem(link.resultItem);
 			else currentLocation.availableItems.addItem(link.resultItem);
+			
+			System.out.println("You combined the " + item1 + " and the " + item2);
+			System.out.println("into the " + link.resultItem.name.toUpperCase());
 		}
 		catch (InvalidInputException e) {
 			printItemNotRecognised(e.x);
@@ -313,20 +324,24 @@ public class GameSession implements Serializable {
 		String rawItemName = ai.nouns.get(0);
 		String rawContainerName = ai.nouns.get(1);
 		
-		Set<String> availableItems = items.keySet();
-		Set<String> availableContainers = currentInventory.getItemNames();
-		availableContainers.addAll(currentLocation.availableItems.items);
+		
 		
 		try {
-			String item = didYouMean(getPossibleItems(availableItems, rawItemName), rawItemName);
+			Set<String> availableContainers = currentInventory.getItemNames();
+			availableContainers.addAll(currentLocation.availableItems.items);
 			String container = didYouMean(getPossibleItems(availableContainers, rawContainerName), rawContainerName);
+			Container c = (Container) items.get(container);
+			Set<String> availableItems = c.contains;
+			
+			String item = didYouMean(getPossibleItems(availableItems, rawItemName), rawItemName);
+			
 			if (!kb.isInside(item, container)) {
 				System.out.println("That item isn't inside the container...");
 				return;
 			}
 			
 			Item i = items.get(item);
-			Container c = (Container) items.get(container);
+			
 			c.removeItem(item, kb);
 			currentInventory.addItem(i);
 			System.out.println("Took " + item + " from " + container);
@@ -411,6 +426,9 @@ public class GameSession implements Serializable {
 		}
 		catch (InvalidInputException e) {
 			printItemNotRecognised(e.x);
+			return;
+		} catch (SameItemException e) {
+			System.out.println("You can't use an item to open itself!");
 			return;
 		}
 	}
@@ -562,13 +580,15 @@ public class GameSession implements Serializable {
 	
 	public void saveGame() throws FileNotFoundException, IOException {
 		SavePoint sp = new SavePoint(currentInventory, currentLocation.name, locations, kb);
+		System.out.println(sp.locations.get("sitting room").availableItems.items); //TODO: REMOVE
 		this.sp = sp;
 	}
 	
 	public void restoreFromSave() {
 		this.currentInventory = sp.inv;
-		this.currentLocation = locations.get(sp.currentLocation);
 		this.locations = sp.locations;
+		System.out.println(locations.get("sitting room").availableItems.items); //TODO: REMOVE
+		this.currentLocation = locations.get(sp.currentLocation);
 		this.kb = sp.kb;
 		play();
 	}

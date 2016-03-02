@@ -14,6 +14,7 @@
 :- op(100, xfx, hasproperty).
 :- op(100, xfx, knowsabout).
 :- op(100, xfx, linkedwith).
+:- op(100, xfx, combinable).
 :- op(100, xfx, opens).
 :- op(100, xfx, fitsinside).
 :- op(100, xfx, inside).
@@ -35,12 +36,12 @@ fact : a opens b.
 fact : a fitsinside b.
 fact : a inside b.
 
-fact : brown_key opens brown_door.
-
 rule : I fitsinside C if C hasproperty container.
 
 % Symmetric relation
-fact : X linkedwith Y :- fact : Y linkedwith X.
+% Doing this naively gives an infinite loop!
+fact : X combinable Y :- fact : X linkedwith Y.
+fact : X combinable Y :- fact : Y linkedwith X.
 
 % FPCL - failed precondition list
 answer(Goal, true, 'specified') :-

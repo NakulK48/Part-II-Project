@@ -27,6 +27,8 @@ public class KnowledgeBase implements Cloneable, Serializable {
 	public HashSet<String> facts;
 	public HashSet<String> rules;
 	
+	static final long serialVersionUID = 8918211742842281561L;
+	
 	private static String sanitiseString(String s) {
 		return s.replace(" ", "_");
 	}
@@ -108,7 +110,7 @@ public class KnowledgeBase implements Cloneable, Serializable {
 	
 	public boolean hasLink(String item1, String item2) throws SameItemException, NoSolutionException {
 		if (item1.equals(item2)) throw new SameItemException();
-		String fact = generateFactForQuery("linkedwith", item1, item2);
+		String fact = generateFactForQuery("combinable", item1, item2);
 		SolveInfo s = query(fact);
 		return getQuerySuccess(s);
 	}
@@ -186,7 +188,9 @@ public class KnowledgeBase implements Cloneable, Serializable {
 	}
 	
 	public void addRule(String conclusion, List<String> premises) {
-		String rule = String.join("&", sanitiseList(premises)) + " implies " + sanitiseString(conclusion) + ".";
+		LinkedList<String> processedPremises = new LinkedList<String>();
+		for (String s : premises) processedPremises.add("X hasproperty " + sanitiseString(s));
+		String rule = "rule : X hasproperty " + sanitiseString(conclusion) + " if " + String.join(" and ", processedPremises) + ".";
 		addRule(rule);
 	}
 	
@@ -229,7 +233,6 @@ public class KnowledgeBase implements Cloneable, Serializable {
 	}
 	
 	public String getQueryFailureReason(SolveInfo s) throws NoSolutionException {
-		Term t = s.getVarValue("R");
 		String prologList = s.getVarValue("R").toString();
 		return fullyParsePrologFailedPremiseList(prologList);
 	}
@@ -283,9 +286,9 @@ public class KnowledgeBase implements Cloneable, Serializable {
 	
 	public static String fullyParsePrologFailedPremiseList(String prologList) {
 		List<String> javaList = javaListFromPrologList(prologList);
-		if (javaList.size() == 0) return "failed because that property is atomic and does not hold.";
+		if (javaList.size() == 0) return "This is because that property is atomic and does not hold.";
 		List<String> reasons = new LinkedList<String>();
-		String fullReason = "failed because ";
+		String fullReason = "This is because ";
 		for (String s : javaList) {
 			String reason = parseFailedPremisePrologFunctor(s);
 			reasons.add(reason);
@@ -294,11 +297,14 @@ public class KnowledgeBase implements Cloneable, Serializable {
 		return fullReason;
 	}
 	
-	public static void main(String[] args) throws FileNotFoundException, IOException, NoSolutionException, UnknownVarException {
+	public static void main(String[] args) throws FileNotFoundException, IOException, SameItemException, InvalidTheoryException, NoSolutionException {
+		String item1 = "cheese wedge";
+		String item2 = "incomplete cheese wheel";
+		//System.out.println(fact);
 		KnowledgeBase kb = new KnowledgeBase();
-		SolveInfo s = kb.query("plate hasproperty glass");
-		System.out.println(kb.getQuerySuccess(s));
-		String failureReason = kb.getQueryFailureReason(s);
-		System.out.println(failureReason);
+		kb.addLink(item1, item2);
+		System.out.println(kb.getTheory());
+		System.out.println(kb.hasLink(item2 + "x", item1));
 	}
+	
 }

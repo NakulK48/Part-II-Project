@@ -1,9 +1,11 @@
 package gameconcepts;
 
+import java.io.Serializable;
+
 import knowledgerep.KnowledgeBase;
 import knowledgerep.SameItemException;
 
-public class Link {
+public class Link implements Serializable {
 
 	Item item1;
 	Item item2;
@@ -18,7 +20,7 @@ public class Link {
 
 	@Override
 	public String toString() {
-		return "[item1" + "+" + item2 + " = " + resultItem + "]";
+		return item1.name + "+" + item2.name + "->" + resultItem.name;
 	}
 	
 }
