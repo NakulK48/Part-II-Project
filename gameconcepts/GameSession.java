@@ -38,9 +38,6 @@ public class GameSession implements Serializable {
 	private InputProcessing ip;
 	private SavePoint sp;
 	
-	private ArrayList<String> positiveResponses = new ArrayList<String>();
-	private ArrayList<String> negativeResponses = new ArrayList<String>();
-	
 	public GameSession(Game game, String name, Inventory currentInventory, Location currentLocation, KnowledgeBase kb, 
 			HashMap<String, Action> actions, HashMap<String, Location> locations, HashMap<String, Item> items,
 			Set<Link> links) {
@@ -89,15 +86,23 @@ public class GameSession implements Serializable {
 		}
 	}
 	
-	public void takeItem(String itemName) {
+	public void takeItem(String input) {
+		AnalyzedInput ai = ip.analyzeInput(input);
+		String rawItemName = ai.nouns.get(0);
 		
-		itemName = itemName.toLowerCase();
+		Set<String> availableItems = currentInventory.getItemNames();
+		availableItems.addAll(currentLocation.availableItems.getItemNames());
 		
-		if (!currentLocation.availableItems.hasItem(itemName)) {
-			System.out.println("That item is not present!");
-			return;
-		}
-		if (currentLocation.availableItems.hasItem(itemName)) {
+		try {
+			String itemName = didYouMean(getPossibleItems(availableItems, rawItemName), rawItemName);
+			if (currentInventory.hasItem(itemName)) {
+				System.out.println("You already have that!");
+				return;
+			}
+			if (!currentLocation.availableItems.hasItem(itemName)) {
+				System.out.println("That item is not present!");
+				return;
+			}
 			Item item = items.get(itemName);
 			if (!item.takable) {
 				System.out.println("You cannot take that!");
@@ -106,16 +111,8 @@ public class GameSession implements Serializable {
 			currentLocation.availableItems.removeItem(itemName);
 			currentInventory.addItem(item);
 			System.out.println("Took " + itemName);
-		}
-		else {
-			String choice;
-			try {
-				choice = didYouMean(getPossibleItems(currentLocation.availableItems.items, itemName), itemName);
-				takeItem(choice);
-			} catch (InvalidInputException e) {
-				printItemNotRecognised(itemName);
-			}
-			
+		} catch (InvalidInputException e) {
+			printItemNotRecognised(rawItemName);
 		}
 	}
 	
@@ -123,13 +120,25 @@ public class GameSession implements Serializable {
 		System.out.println("Sorry, that item - " + itemName + " - was not recognised");
 	}
 	
-	public void inspectItem(String itemName) {
-		if (!currentInventory.hasItem(itemName) && !currentLocation.availableItems.hasItem(itemName)) {
-			System.out.println("You don't have that item!");
-			return;
+	public void inspectItem(String input) {
+		AnalyzedInput ai = ip.analyzeInput(input);
+		String rawItemName = ai.nouns.get(0);
+		
+		Set<String> availableItems = currentInventory.getItemNames();
+		availableItems.addAll(currentLocation.availableItems.getItemNames());
+		
+		try {
+			String itemName = didYouMean(getPossibleItems(availableItems, rawItemName), rawItemName);
+			if (!currentInventory.hasItem(itemName) && !currentLocation.availableItems.hasItem(itemName)) {
+				System.out.println("You don't have that item!");
+				return;
+			}
+			Item item = items.get(itemName);
+			item.printInGameDetails();
+		} catch (InvalidInputException e) {
+			printItemNotRecognised(rawItemName);
 		}
-		Item item = items.get(itemName);
-		item.printInGameDetails();
+
 	}
 	
 	public void takeActionOnItem(String action, String itemName) throws ItemNotFoundException {
@@ -169,7 +178,10 @@ public class GameSession implements Serializable {
 			
 			System.out.println(a.effectText);
 			
-			if (a.destroysItem) currentInventory.removeItem(itemName);
+			if (a.destroysItem) {
+				currentInventory.removeItem(itemName);
+				System.out.println("You lost the " + itemName);
+			}
 			else {
 				item.addProperties(a.propertiesToAdd);
 				item.removeProperties(a.propertiesToRemove);
@@ -180,11 +192,31 @@ public class GameSession implements Serializable {
 			for (String name : a.itemsToAdd) {
 				Item i = items.get(name);
 				currentInventory.addItem(i);
+				System.out.println("You gained the " + name);
 			}
 		} catch (NoSolutionException e) {
 			System.out.println("You can't do that!");
 			return;
 		}
+	}
+	
+	public void printHelpText() {
+		System.out.println("HOW TO PLAY");
+		System.out.println("----------");
+		System.out.println("move <direction>/");
+		System.out.println("take the <item in room>/");
+		System.out.println("take the <item in container> from the <container>/");
+		System.out.println("inspect the <item in inventory>/");
+		System.out.println("look (get description of room)/");
+		System.out.println("inventory (list items)/");
+		System.out.println("combine <item1> and <item2>/");
+		System.out.println("open the <door> with the <key>/");
+		System.out.println("save/restore");
+		System.out.println("or take some action on an item in the room or your inventory.");
+		System.out.println("If you're having trouble, make sure you use articles");
+		System.out.println("e.g. 'take the box' rather than 'take box'");
+		System.out.println("----------");
+		System.out.println();
 	}
 	
 	public void processUserInput(String input) {
@@ -209,24 +241,26 @@ public class GameSession implements Serializable {
 					if (input.contains("from")) {
 						takeItemFromContainer(input);
 					} else {
-						AnalyzedInput ai = ip.analyzeInput(input);
-						String availableItemName = ai.nouns.get(0);
-						takeItem(availableItemName);
+						takeItem(input);
 					}
 					break;
 				case "put":
 					putItemInContainer(input);
 					break;
+				case "examine":
 				case "inspect":
-					String inventoryItemName = String.join(" ", words.subList(1, words.size()));
-					inspectItem(inventoryItemName.toLowerCase());
+					inspectItem(input);
 					break;
 				case "look":
-					System.out.println(currentLocation.generateText());
+					if (words.size() == 1) System.out.println(currentLocation.generateText());
+					//May be saying "look at XXX", meaning inspect.
+					else inspectItem(input);
 					break;
+				case "inv":
 				case "inventory":
 					System.out.println(currentInventory.getItemNames());
 					break;
+				case "join":
 				case "combine":
 					combineItems(input);
 					break;
@@ -234,14 +268,7 @@ public class GameSession implements Serializable {
 					openLockedDoor(input);
 					break;
 				case "help":
-					System.out.println("move <direction>/take <item in room>/inspect <item in inventory>/");
-					System.out.println("look (get description of room)/inventory (list items)/");
-					System.out.println("combine <item1> and <item2>/");
-					System.out.println("open <door> with <key>/");
-					System.out.println("save/restore");
-					System.out.println("or take some action on an item in the room or your inventory.");
-					System.out.println("If you're having trouble, make sure you use articles");
-					System.out.println("e.g. 'take the box' rather than 'take box'");
+					printHelpText();
 					break;
 				case "save":
 					saveGame();
@@ -565,10 +592,9 @@ public class GameSession implements Serializable {
 	
 	public void play() {
 		this.ip = new InputProcessing();
+		printHelpText();
 		System.out.println(currentLocation.generateText());
 		while (true) {
-			if (game.isVictory(currentLocation, currentInventory)) game.printVictoryText();
-			else if (game.isDefeat(currentLocation)) game.printDefeatText();
 			System.out.print("> ");
 			Scanner s = new Scanner(System.in);
 			String input = s.nextLine();
@@ -580,14 +606,12 @@ public class GameSession implements Serializable {
 	
 	public void saveGame() throws FileNotFoundException, IOException {
 		SavePoint sp = new SavePoint(currentInventory, currentLocation.name, locations, kb);
-		System.out.println(sp.locations.get("sitting room").availableItems.items); //TODO: REMOVE
 		this.sp = sp;
 	}
 	
 	public void restoreFromSave() {
 		this.currentInventory = sp.inv;
 		this.locations = sp.locations;
-		System.out.println(locations.get("sitting room").availableItems.items); //TODO: REMOVE
 		this.currentLocation = locations.get(sp.currentLocation);
 		this.kb = sp.kb;
 		play();

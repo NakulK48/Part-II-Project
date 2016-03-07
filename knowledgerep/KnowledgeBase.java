@@ -17,9 +17,7 @@ import alice.tuprolog.MalformedGoalException;
 import alice.tuprolog.NoSolutionException;
 import alice.tuprolog.Prolog;
 import alice.tuprolog.SolveInfo;
-import alice.tuprolog.Term;
 import alice.tuprolog.Theory;
-import alice.tuprolog.UnknownVarException;
 
 public class KnowledgeBase implements Cloneable, Serializable {
 	
@@ -137,7 +135,7 @@ public class KnowledgeBase implements Cloneable, Serializable {
 	}
 	
 	public boolean fitsInside(String item, String container) throws NoSolutionException {
-		String fact = generateFactForQuery("fitsInside", item, container);
+		String fact = generateFactForQuery("fitsinside", item, container);
 		SolveInfo s = query(fact);
 		return getQuerySuccess(s);
 	}
@@ -212,11 +210,9 @@ public class KnowledgeBase implements Cloneable, Serializable {
 		} catch (InvalidTheoryException e) {
 			System.out.println("Your theory is invalid!");
 			System.out.println("Facts: " + theoryFromClauses(facts) + "\n" + "Rules: " + theoryFromClauses(rules));
-			e.printStackTrace();
 			return null;
 		} catch (MalformedGoalException e) {
 			System.out.println("Your query is invalid!");
-			e.printStackTrace();
 			return null;
 		}
 	}

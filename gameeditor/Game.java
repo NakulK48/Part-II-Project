@@ -26,11 +26,12 @@ import knowledgerep.KnowledgeBase;
 
 public class Game implements Serializable {
 
+	private static final long serialVersionUID = 8613739691542964120L;
+	
 	public String name;
 	public HashMap<String, GameSession> sessions;
 	public HashMap<String, Location> allLocations;
 	public HashMap<String, Location> defeatLocations;
-	public Location victoryLocation;
 	public HashMap<String, Item> allItems;
 	public Item victoryItem;
 	public Location startLocation;
@@ -48,7 +49,6 @@ public class Game implements Serializable {
 		this.allLocations = new HashMap<String, Location>();
 		this.allItems = new HashMap<String, Item>();
 		this.startLocation = null;
-		this.victoryLocation = null;
 		this.defeatLocations = new HashMap<String, Location>();
 		this.victoryItem = null;
 		this.victoryText = "You win!";
@@ -65,7 +65,6 @@ public class Game implements Serializable {
 		this.allLocations = ge.locations;
 		this.allItems = ge.items;
 		this.startLocation = ge.startLocation;
-		this.victoryLocation = ge.victoryLocation;
 		this.defeatLocations = ge.defeatLocations;
 		this.victoryItem = ge.victoryItem;
 		this.kb = ge.kb;
@@ -88,8 +87,6 @@ public class Game implements Serializable {
 	}
 	
 	
-	
-	@SuppressWarnings("unchecked")
 	public void playGame() throws IOException {
 		Scanner s = new Scanner(System.in);
 		
@@ -98,11 +95,18 @@ public class Game implements Serializable {
 			System.out.println("Available sessions:");
 			System.out.println(sessions.keySet());
 			String choice = s.nextLine();
-			if (choice.equals("q")) break;
+			if (choice.equals("q")) {
+				//saveToFile();
+				break;
+			}
 			if (choice.equals("new")) {
 				System.out.println("Name (must be unique):");
 				String sessionName = s.nextLine();
 				newSession(sessionName);
+			}
+			else if (choice.equals("delete-all")) {
+				sessions.clear();
+				continue;
 			}
 			else if (!sessions.containsKey(choice)) {
 				System.out.println("Not a valid session.");
@@ -162,16 +166,6 @@ public class Game implements Serializable {
 		sessions.put(name, session);
 	}
 	
-	public boolean isVictory(Location loc, Inventory inv) {
-		return false;
-		// return loc.equals(victoryLocation) || inv.hasItem(victoryItem);
-	}
-	
-	public boolean isDefeat(Location loc) {
-		return false;
-		// return defeatLocations.containsKey(loc.name);
-	}
-	
 	public void printVictoryText() {
 		System.out.println(victoryText);
 	}
@@ -191,6 +185,7 @@ public class Game implements Serializable {
 			FileInputStream fis = new FileInputStream(f);
 			ObjectInputStream ois = new ObjectInputStream(fis);
 			g = (Game) ois.readObject();
+			ois.close();
 		}
 		while (true) {
 			System.out.println("Select an action: (play), (edit), (q)uit");

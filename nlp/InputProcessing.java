@@ -60,8 +60,8 @@ public class InputProcessing implements Serializable {
 	public AnalyzedInput analyzeInput(String input) {
 		AnalyzedInput ai = null;
 		
-		ai = ieParse(input);
-		if (ai.nouns.size() > 0) return ai;
+		//ai = ieParse(input);
+		//if (ai.nouns.size() > 0) return ai;
 		
 		ai = posParse(input);
 		
@@ -95,8 +95,7 @@ public class InputProcessing implements Serializable {
 			String word = sentence.word(i);
 			String tag = sentence.posTag(i);
 			// Include preceding adjective in the noun.
-			if (tag.startsWith("J")) currentNoun += word + " ";
-			// Bring in all previous adjectives and the noun itself
+			
 			if (tag.startsWith("N")) {
 				if (prevWasNoun) {
 					//handle compound nouns
@@ -106,10 +105,12 @@ public class InputProcessing implements Serializable {
 				} else {
 					nouns.add(currentNoun + word);
 					currentNoun = "";
-					prevWasNoun = true;
 				}
+				
+				prevWasNoun = true;
 			}
 			else prevWasNoun = false;
+			if (tag.startsWith("J")) currentNoun += word + " ";
 			// Only one verb
 			if (tag.startsWith("V")) verb = word;
 		}
@@ -139,15 +140,5 @@ public class InputProcessing implements Serializable {
 		
 		AnalyzedInput ai = new AnalyzedInput(nouns, verb, verbSyn);
 		return ai;
-	}
-	
-	public static void main(String[] args) throws InvalidInputException {
-		String text1 = "burn plank";
-		String text2 = "open red door with red key";
-		
-		InputProcessing ip = new InputProcessing();
-		System.out.println(ip.analyzeInput(text1));
-		System.out.println(ip.analyzeInput(text2));
-		//System.out.println(ip.analyzeInput(text));
 	}
 }

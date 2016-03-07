@@ -1,8 +1,8 @@
 package gameeditor;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
@@ -26,7 +26,7 @@ public class GameEditor {
 	public HashMap<String, Item> items;
 	public HashMap<String, Location> locations;
 	public Location startLocation;
-	public Location victoryLocation;
+	public String victoryLocation;
 	public Item victoryItem;
 	public HashMap<String, Location> defeatLocations;
 	public KnowledgeBase kb;
@@ -40,7 +40,6 @@ public class GameEditor {
 		this.items = game.allItems;
 		this.locations = game.allLocations;
 		this.startLocation = game.startLocation;
-		this.victoryLocation = game.victoryLocation;
 		this.defeatLocations = game.defeatLocations;
 		this.victoryItem = game.victoryItem;
 		this.kb = game.kb;
@@ -75,18 +74,23 @@ public class GameEditor {
 		String actionText = prompt("Action text: ");
 		String destroyString = prompt("Does the action destroy its item? (y/n)");
 		boolean destroyItem = destroyString.equals("y");
+		List<String> propertiesToAdd = new LinkedList<String>();
+		List<String> propertiesToRemove = new LinkedList<String>();
 
-		String choice = prompt("Properties to add to item (comma separated):");
-		List<String> propertiesToAdd = stripAndSplit(choice);
-
-		choice = prompt("Properties to remove from item (comma separated):");
-		List<String> propertiesToRemove = stripAndSplit(choice);
+		if (!destroyItem) {
+			String choice = prompt("Properties to add to item (comma separated):");
+			propertiesToAdd = stripAndSplit(choice);
+	
+			choice = prompt("Properties to remove from item (comma separated):");
+			propertiesToRemove = stripAndSplit(choice);
+		}
 		
 		LinkedList<String> itemsToAdd = new LinkedList<String>();
 		
 		
 		while (true) {
-			choice = prompt("Items to add to inventory (q to stop):");
+			printSortedSet(items.keySet());
+			String choice = prompt("Items to add to inventory (q to stop):");
 			if (choice.equals("q")) break;
 			if (!items.containsKey(choice)) {
 				System.out.println("Not a valid item.");
@@ -169,7 +173,7 @@ public class GameEditor {
 						break;
 					case "2": //add item
 						System.out.println("Available items:");
-						System.out.println(this.items.keySet());
+						printSortedSet(items.keySet());
 						String itemName = prompt("Enter an item name:");
 						if (items.containsKey(itemName)) {
 							Item item = items.get(itemName);
@@ -258,6 +262,7 @@ public class GameEditor {
 			System.out.println("(1) Edit description");
 			System.out.println("(2) Set properties");
 			System.out.println("(3) Set takable");
+			System.out.println("(4) DELETE ITEM");
 			System.out.println("(q) Go back");
 			
 			String choice = s.nextLine();
@@ -273,6 +278,14 @@ public class GameEditor {
 					String takableString = prompt("Takable? (y/n)");
 					if (takableString.equals("n")) takable = false;
 					item.takable = takable;
+					break;
+				case "4":
+					choice = prompt("Are you sure? (y/n)");
+					if (choice.equals("y")) {
+						items.remove(itemName);
+						return;
+					}
+					break;
 				case "q":
 					return;
 				default:
@@ -374,10 +387,24 @@ public class GameEditor {
 		}
 	}
 	
+	private void printSortedSet(Set<String> ss) {
+		LinkedList<String> lls = new LinkedList<String>(ss);
+		Collections.sort(lls);
+		for (int i = 0; i < lls.size(); i++) {
+			String s = lls.get(i);
+			System.out.print(s);
+			if (i != 0 && (i%5 == 0)) System.out.println();
+			else if (i == lls.size() - 1) continue;
+			else System.out.print(", ");
+		}
+		System.out.println();
+		System.out.println();
+	}
+	
 	public void manageItems() {
 		while (true) {
 			System.out.println("Current items:");
-			System.out.println(this.items.keySet());
+			printSortedSet(this.items.keySet());
 			String choice = prompt("Select an item, or 'new' to create an item, or (q) to return to main menu");
 			if (choice.equals("q")) return;
 			if (choice.equals("new")) {
@@ -398,6 +425,8 @@ public class GameEditor {
 		try {
 			String doorName = prompt("Door name:");
 			String doorDesc = prompt("Door description:");
+			System.out.println("LOCATIONS:");
+			System.out.println(locations.keySet());
 			String doorDest = promptAndVerify("Door destination:", locations.keySet());
 			String doorOrig = promptAndVerify("Door origin:", locations.keySet());
 			String doorDir = prompt("Door direction:").toUpperCase();
@@ -517,12 +546,12 @@ public class GameEditor {
 					break;
 				case "4":
 					System.out.println("Current victory location:");
-					if (victoryLocation != null) System.out.println(victoryLocation.name);
+					if (victoryLocation != null) System.out.println(victoryLocation);
 					System.out.println("Available locations:");
 					System.out.println(this.locations.keySet());
 					String victoryName = prompt("Victory location:");
 					if (locations.containsKey(victoryName)) {
-						this.victoryLocation = locations.get(victoryName);
+						this.victoryLocation = victoryName;
 					}
 					else System.out.println("Invalid location.");
 					break;
@@ -532,7 +561,7 @@ public class GameEditor {
 					System.out.println("Current victory item:");
 					if (victoryItem != null) System.out.println(victoryItem.name);
 					System.out.println("Available items:");
-					System.out.println(this.items.keySet());
+					printSortedSet(this.items.keySet());
 					String itemName = prompt("Victory item:");
 					if (locations.containsKey(itemName)) {
 						this.victoryItem = items.get(victoryItem);
@@ -578,7 +607,8 @@ public class GameEditor {
 			while (true) {
 				String choice = prompt("Add item? (y/n)");
 				if (!choice.equals("y")) break;
-				String itemName = prompt(items.keySet().toString());
+				printSortedSet(items.keySet());
+				String itemName = prompt("");
 				if (!items.containsKey(itemName)) {
 					System.out.println("Item not recognised.");
 					continue;
@@ -594,9 +624,6 @@ public class GameEditor {
 			createContainer();
 		}
 		
-	}
-
-	public static void main(String[] args) {
 	}
 	
 }

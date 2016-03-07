@@ -1,7 +1,6 @@
 package gameconcepts;
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 
 public class Location implements Serializable {
@@ -22,7 +21,7 @@ public class Location implements Serializable {
 		this.name = loc.name;
 		this.flavorText = loc.flavorText;
 		this.availableItems = new Inventory(loc.availableItems);
-		this.exits = loc.exits;
+		this.exits = new HashMap<Direction, String>(loc.exits);
 	}
 
 	public String generateText() {

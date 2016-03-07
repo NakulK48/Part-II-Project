@@ -99,7 +99,7 @@ public class Item implements Serializable {
 	
 	public void printInGameDetails() {
 		System.out.println(description);
-		if (!properties.isEmpty()) System.out.println("It is " + String.join(", ", properties));
+		//if (!properties.isEmpty()) System.out.println("It is " + String.join(", ", properties));
 	}
 	
 }

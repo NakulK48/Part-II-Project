@@ -1,6 +1,5 @@
 package gameconcepts;
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -13,7 +12,10 @@ public class Inventory implements Serializable {
 	}
 	
 	public Inventory (Inventory inv) {
-		this.items = (HashSet<String>) inv.items.clone();
+		this.items = new HashSet<String>();
+		for (String s : inv.items) {
+			this.items.add(s);
+		}
 	}
 	
 	public void addItem(Item item) {
@@ -29,7 +31,11 @@ public class Inventory implements Serializable {
 	}
 	
 	public Set<String> getItemNames() {
-		return (Set<String>) items.clone();
+		Set<String> ss = new HashSet<String>();
+		for (String s : items) {
+			ss.add(s);
+		}
+		return ss;
 	}
 	
 	public void removeItem(Item item) {

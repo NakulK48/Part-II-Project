@@ -17,7 +17,12 @@ public class SavePoint implements Serializable {
 		super();
 		this.inv = new Inventory(inv);
 		this.currentLocation = currentLocation;
-		this.locations = (HashMap<String, Location>) locations.clone();
+		// Must deep copy locations.
+		this.locations = new HashMap<String, Location>();
+		for (String s : locations.keySet()) {
+			Location loc = new Location(locations.get(s));
+			this.locations.put(s, loc);
+		}
 		this.kb = new KnowledgeBase(kb);
 	}
 
